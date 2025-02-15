@@ -1,0 +1,42 @@
+# Translation file
+
+#
+# Generic
+#
+
+# Module label 'ModuleMobilemoneyName'
+ModuleMobilemoneyName = Mobilemoney
+# Module description 'ModuleMobilemoneyDesc'
+ModuleMobilemoneyDesc = Mobilemoney description
+
+#
+# Admin page
+#
+MobilemoneySetup = Mobilemoney setup
+Settings = Settings
+MobilemoneySetupPage = Mobilemoney setup page
+NewSection=New section
+MOBILEMONEY_MYPARAM1 = My param 1
+MOBILEMONEY_MYPARAM1Tooltip = My param 1 tooltip
+MOBILEMONEY_MYPARAM2=My param 2
+MOBILEMONEY_MYPARAM2Tooltip=My param 2 tooltip
+
+
+#
+# About page
+#
+About = About
+MobilemoneyAbout = About Mobilemoney
+MobilemoneyAboutPage = Mobilemoney about page
+
+#
+# Sample page
+#
+MobilemoneyArea = Home Mobilemoney
+MyPageName = My page name
+
+#
+# Sample widget
+#
+MyWidget = My widget
+MyWidgetDescription = My widget description
