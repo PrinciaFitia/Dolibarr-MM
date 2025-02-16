@@ -99,6 +99,11 @@ llxHeader('', $langs->trans('TicketsIndex'), $help_url, '', 0, 0, '', '', '', 'm
 $linkback = '';
 print load_fiche_titre($langs->trans('TicketsIndex'), $resultboxes['selectboxlist'], 'ticket');
 
+// Ajouter un bouton pour accéder au formulaire de paiement Mobile Money
+print '<div class="button-container" style="margin-top: 20px;">';
+print '<a class="button" href="'.DOL_URL_ROOT.'/ticket/payment_form.php" title="'.$langs->trans("MobileMoneyPaymentForm").'">';
+print '<span class="fa fa-money"></span> '.$langs->trans("Mobile Money Payment Form").'</a>';
+print '</div>';
 
 $dir = '';
 $prefix = '';

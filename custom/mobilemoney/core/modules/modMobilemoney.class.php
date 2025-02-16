@@ -71,7 +71,7 @@ class modMobilemoney extends DolibarrModules
 		$this->descriptionlong = "MobilemoneyDescription";
 
 		// Author
-		$this->editor_name = 'Fitia Princia';
+		$this->editor_name = 'Test Dolibarr';
 		$this->editor_url = '';		// Must be an external online web site
 		$this->editor_squarred_logo = '';					// Must be image filename into the module/img directory followed with @modulename. Example: 'myimage.png@mobilemoney'
 
