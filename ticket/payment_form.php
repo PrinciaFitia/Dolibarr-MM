@@ -21,7 +21,7 @@
  */
 
 // Load Dolibarr environment
-require '/Applications/MAMP/htdocs/dolibarr2.0/main.inc.php';
+require '../main.inc.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/admin.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/date.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/ticket/class/ticket.class.php';
@@ -29,6 +29,10 @@ require_once DOL_DOCUMENT_ROOT.'/ticket/class/ticket.class.php';
 // Load translation files required by the page
 $langs->loadLangs(array('admin', 'bills', 'ticket'));
 
+// Security check
+if (!$user->hasRight('ticket', 'read')) {
+    accessforbidden('Not enough permissions');
+}
 
 // Get parameters
 $action = GETPOST('action', 'aZ09');
@@ -63,31 +67,36 @@ print '</div>'; // Fin de la classe container
 
 // Traitement des soumissions
 if ($action == 'submit_payment_info') {
-    
+    // Vérification du token CSRF
+    if (empty($_REQUEST['token']) || $_REQUEST['token'] !== $_SESSION['newtoken']) {
+        print '<div class="alert alert-danger">'.$langs->trans("CSRFTokenInvalid").'</div>';
+        exit;
+    }
+
     $client_name = GETPOST('client_name', 'alpha');
     $transfer_code = GETPOST('transfer_code', 'alpha');
     $invoice_number = GETPOST('invoice_number', 'alpha');
 
     // Vérifier si la facture existe
-    $sql_invoice = "SELECT * FROM ".MAIN_DB_PREFIX."facture WHERE ref = '$invoice_number' AND fk_statut = 0"; // 0 pour "unpaid"
+    $sql_invoice = "SELECT * FROM ".MAIN_DB_PREFIX."llx_facture WHERE ref = '$invoice_number' AND fk_statut = 1"; // 1 pour "unpaid"
     $resql_invoice = $db->query($sql_invoice);
     
     if ($resql_invoice && $db->num_rows($resql_invoice) > 0) {
         $invoice = $db->fetch_object($resql_invoice);
         
         // Vérifier si le montant correspond à celui enregistré dans le module Mobile Money
-        $sql_payment = "SELECT * FROM ".MAIN_DB_PREFIX."mobilemoney_payments WHERE invoice_number = '$invoice_number' AND transfer_code = '$transfer_code' AND status = 'pending'";
+        $sql_payment = "SELECT * FROM ".MAIN_DB_PREFIX."llx_mobilemoney_payments WHERE invoice_number = '$invoice_number' AND transfer_code = '$transfer_code' AND status = 'pending'";
         $resql_payment = $db->query($sql_payment);
         
         if ($resql_payment && $db->num_rows($resql_payment) > 0) {
             $payment = $db->fetch_object($resql_payment);
             if ($payment->amount == $invoice->total_ttc) { // Utiliser total_ttc pour la comparaison
                 // Valider le paiement
-                $sql_update_payment = "UPDATE ".MAIN_DB_PREFIX."mobilemoney_payments SET status = 'validated' WHERE transfer_code = '$transfer_code'";
+                $sql_update_payment = "UPDATE ".MAIN_DB_PREFIX."llx_mobilemoney_payments SET status = 'validated' WHERE transfer_code = '$transfer_code'";
                 $db->query($sql_update_payment);
                 
                 // Mettre à jour la facture
-                $sql_update_invoice = "UPDATE ".MAIN_DB_PREFIX."facture SET fk_statut = 1 WHERE rowid = ".$invoice->rowid; // 1 pour "paid"
+                $sql_update_invoice = "UPDATE ".MAIN_DB_PREFIX."llx_facture SET fk_statut = 0 WHERE rowid = ".$invoice->rowid; // 1 pour "paid"
                 $db->query($sql_update_invoice);
                 
                 print '<div class="alert alert-success">'.$langs->trans("PaymentValidated").'</div>';
@@ -96,7 +105,7 @@ if ($action == 'submit_payment_info') {
             }
         } else {
             // Si aucun paiement en attente n'est trouvé, insérer un nouveau paiement
-            $sql_insert = "INSERT INTO ".MAIN_DB_PREFIX."mobilemoney_payments (amount, transfer_code, invoice_number, client_name, status, date) VALUES (".$invoice->total_ttc.", '$transfer_code', '$invoice_number', '$client_name', 'pending', NOW())";
+            $sql_insert = "INSERT INTO ".MAIN_DB_PREFIX."llx_mobilemoney_payments (amount, transfer_code, invoice_number, client_name, status, date) VALUES (".$invoice->total_ttc.", '$transfer_code', '$invoice_number', '$client_name', 'pending', NOW())";
             $db->query($sql_insert);
             print '<div class="alert alert-success">'.$langs->trans("PaymentRecorded").'</div>';
         }

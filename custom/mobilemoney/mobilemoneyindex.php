@@ -74,25 +74,26 @@ if ($action == 'submit_payment_info') {
     $amount = GETPOST('amount', 'float');
 
     // Vérifier si une facture existe avec le montant
-    $sql_invoice = "SELECT * FROM ".MAIN_DB_PREFIX."facture WHERE total_ttc = $amount AND fk_statut = 0"; // 0 pour "unpaid"
+    $sql_invoice = "SELECT * FROM ".MAIN_DB_PREFIX."llx_facture WHERE total_ttc = $amount AND fk_statut = 1"; // 0 pour "unpaid"
+
     $resql_invoice = $db->query($sql_invoice);
     
     if ($resql_invoice && $db->num_rows($resql_invoice) > 0) {
         $invoice = $db->fetch_object($resql_invoice);
         
         // Vérifier si le code de transfert a déjà été utilisé
-        $sql_payment = "SELECT * FROM ".MAIN_DB_PREFIX."mobilemoney_payments WHERE transfer_code = '$transfer_code' AND status = 'pending'";
+        $sql_payment = "SELECT * FROM ".MAIN_DB_PREFIX."llx_mobilemoney_payments WHERE transfer_code = '$transfer_code' AND status = 'pending'";
         $resql_payment = $db->query($sql_payment);
         
         if ($resql_payment && $db->num_rows($resql_payment) > 0) {
             print '<div class="alert alert-danger">'.$langs->trans("TransferCodeAlreadyUsed").'</div>';
         } else {
             // Enregistrer le paiement
-            $sql_insert = "INSERT INTO ".MAIN_DB_PREFIX."mobilemoney_payments (amount, transfer_code, client_name, status, date) VALUES ($amount, '$transfer_code', '$client_name', 'pending', NOW())";
+            $sql_insert = "INSERT INTO ".MAIN_DB_PREFIX."llx_mobilemoney_payments (amount, transfer_code, client_name, status, date) VALUES ($amount, '$transfer_code', '$client_name', 'pending', NOW())";
             $db->query($sql_insert);
             
             // Mettre à jour la facture
-            $sql_update_invoice = "UPDATE ".MAIN_DB_PREFIX."facture SET fk_statut = 1 WHERE rowid = ".$invoice->rowid; // 1 pour "paid"
+            $sql_update_invoice = "UPDATE ".MAIN_DB_PREFIX."llx_facture SET fk_statut = 1 WHERE rowid = ".$invoice->rowid; // 1 pour "paid"
             $db->query($sql_update_invoice);
             
             print '<div class="alert alert-success">'.$langs->trans("PaymentRecordedAndInvoiceUpdated").'</div>';
