@@ -72,26 +72,58 @@ if ($action == 'show_invoices') {
     }
 
     if ($resql_invoices && $db->num_rows($resql_invoices) > 0) {
+        print '<form method="POST" action="'.$_SERVER['PHP_SELF'].'">';
         print '<h3>Factures avec Statut 1 et Montant Saisi</h3>';
         print '<table class="table">';
-        print '<thead><tr><th>Référence</th><th>Client</th><th>Montant TTC</th><th>Statut</th></tr></thead>';
+        print '<thead><tr><th>Sélection</th><th>Référence</th><th>Client</th><th>Montant TTC</th><th>Statut</th></tr></thead>';
         print '<tbody>';
 
         while ($invoice = $db->fetch_object($resql_invoices)) {
-            // Afficher chaque facture
             print '<tr>';
+            print '<td><input type="checkbox" name="selected_invoices[]" value="'.$invoice->rowid.'"></td>';
             print '<td>'.$invoice->ref.'</td>';
-            print '<td>'.$invoice->client_name.'</td>'; // Nom du client
+            print '<td>'.$invoice->client_name.'</td>';
             print '<td>'.price($invoice->total_ttc).'</td>';
-            print '<td>'.$invoice->fk_statut.'</td>'; // Afficher le statut
+            print '<td>'.$invoice->fk_statut.'</td>';
             print '</tr>';
         }
 
         print '</tbody>';
         print '</table>';
+        print '<div class="mb-3">';
+        print '<label class="form-label">Code de transfert</label>';
+        print '<input type="text" name="transfer_code" class="form-control" required>';
+        print '</div>';
+        print '<button type="submit" class="btn btn-primary" name="action" value="record_payment">Enregistrer le paiement</button>';
+        print '</form>';
     } else {
         print '<div class="alert alert-info mt-3 text-center">'.$langs->trans("Aucune facture trouvée avec le statut 1 et le montant saisi").'</div>';
     }
 }
+
+// Traitement de l'enregistrement du paiement
+if ($action == 'record_payment') {
+    $selected_invoices = GETPOST('selected_invoices', 'array');
+    $transfer_code = GETPOST('transfer_code', 'alphanohtml');
+
+    $sql_check_code = "SELECT COUNT(*) FROM ".MAIN_DB_PREFIX."mobilemoney_payments WHERE transfer_code = '".$db->escape($transfer_code)."'";
+    $res_check_code = $db->query($sql_check_code);
+    $row_check_code = $db->fetch_array($res_check_code);
+
+    if ($row_check_code[0] > 0) {
+        print '<div class="alert alert-danger">Ce code de transfert a déjà été utilisé et ne peut être réutilisé.</div>';
+    } else {
+        foreach ($selected_invoices as $invoice_id) {
+            $sql = "INSERT INTO ".MAIN_DB_PREFIX."mobilemoney_payments (amount, transfer_code, invoice_number, client_name, status, date) 
+                    SELECT total_ttc, '".$db->escape($transfer_code)."', ref, s.nom, 1, NOW()
+                    FROM ".MAIN_DB_PREFIX."facture f
+                    JOIN ".MAIN_DB_PREFIX."societe s ON f.fk_soc = s.rowid
+                    WHERE f.rowid = ".$invoice_id;
+            $db->query($sql);
+        }
+        print '<div class="alert alert-success">Paiement enregistré avec succès.</div>';
+    }
+}
+
 llxFooter();
 ?>
