@@ -2,8 +2,8 @@
 /* Copyright (C) 2021-2025 SuperAdmin */
 
 /**
- *    \file       htdocs/ticket/payment_form.php
- *    \ingroup    ticket
+ * \file htdocs/ticket/payment_form.php
+ * \ingroup ticket
  */
 
 require '../main.inc.php';
@@ -13,6 +13,7 @@ require_once DOL_DOCUMENT_ROOT.'/ticket/class/ticket.class.php';
 
 $langs->loadLangs(array('admin', 'bills', 'ticket'));
 
+// Vérifier les droits d'accès
 if (!$user->hasRight('ticket', 'read')) {
     accessforbidden('Not enough permissions');
 }
@@ -20,16 +21,13 @@ if (!$user->hasRight('ticket', 'read')) {
 $action = GETPOST('action', 'aZ09');
 
 llxHeader("", $langs->trans("Mobile Money Payment Form"), '', '', 0, 0, '', '', '', 'mod-ticket page-paymentform');
-
 print load_fiche_titre($langs->trans("Mobile Money Payment Form"), '', 'payment.png');
 
 print '<div class="d-flex justify-content-center align-items-center min-vh-100">';
 print '<div class="card shadow-sm p-4" style="max-width: 500px; width: 100%; border-radius: 12px; border: 1px solid #ddd;">';
-
 print '<div class="card-header bg-primary text-white text-center p-3" style="border-radius: 8px 8px 0 0;">';
 print '<h4 class="mb-0">'.$langs->trans("Enter Payment Information").'</h4>';
 print '</div>';
-
 print '<div class="card-body">';
 print '<form method="POST" action="'.$_SERVER['PHP_SELF'].'">';
 print '<input type="hidden" name="action" value="submit_payment_info">';
@@ -55,14 +53,12 @@ print '</div>';
 
 // Bouton de soumission
 print '<button type="submit" class="btn btn-success w-100 p-2 rounded-3">';
-print '<i class="fas fa-paper-plane"></i> '.$langs->trans("Submit");
+print '<i class="fas fa-paper-plane"></i> Submit ';
 print '</button>';
-
 print '</form>';
 print '</div>'; // Fin card-body
 print '</div>'; // Fin card
 print '</div>'; // Fin container
-
 
 // Traitement des soumissions
 if ($action == 'submit_payment_info') {
@@ -79,27 +75,22 @@ if ($action == 'submit_payment_info') {
     // Vérifier si la facture existe
     $sql_invoice = "SELECT * FROM ".MAIN_DB_PREFIX."facture WHERE ref = '$invoice_number' AND fk_statut = 1"; // 1 = "unpaid"
     $resql_invoice = $db->query($sql_invoice);
-
     if ($resql_invoice && $db->num_rows($resql_invoice) > 0) {
         $invoice = $db->fetch_object($resql_invoice);
 
         // Vérifier si le paiement est déjà en "pending"
         $sql_payment = "SELECT * FROM ".MAIN_DB_PREFIX."mobilemoney_payments WHERE invoice_number = '$invoice_number' AND transfer_code = '$transfer_code' AND status = 'pending'";
         $resql_payment = $db->query($sql_payment);
-        
         if ($resql_payment && $db->num_rows($resql_payment) > 0) {
             print '<div class="alert alert-info mt-3 text-center"><i class="fas fa-info-circle"></i> '.$langs->trans("Payment Recorded").'</div>';
         } else {
             // Enregistrement des informations en attente
-            $sql_insert_payment = "INSERT INTO ".MAIN_DB_PREFIX."mobilemoney_payments (amount, transfer_code, invoice_number, client_name, status, date)
-                                   SELECT total_ttc, '".$db->escape($transfer_code)."', '".$db->escape($invoice_number)."', '".$db->escape($client_name)."', 'pending', NOW()
-                                   FROM ".MAIN_DB_PREFIX."facture WHERE ref = '".$db->escape($invoice_number)."' AND fk_statut = 1";
+            $sql_insert_payment = "INSERT INTO ".MAIN_DB_PREFIX."mobilemoney_payments (amount, transfer_code, invoice_number, client_name, status, date) SELECT total_ttc, '".$db->escape($transfer_code)."', '".$db->escape($invoice_number)."', '".$db->escape($client_name)."', 'pending', NOW() FROM ".MAIN_DB_PREFIX."facture WHERE ref = '".$db->escape($invoice_number)."' AND fk_statut = 1";
             $db->query($sql_insert_payment);
-
             print '<div class="alert alert-info mt-3 text-center"><i class="fas fa-info-circle"></i> '.$langs->trans("Payment Recorded").'</div>';
         }
     } else {
         print '<div class="alert alert-warning mt-3 text-center"><i class="fas fa-times-circle"></i> '.$langs->trans("Invoice Not Found").'</div>';
-
     }
 }
+?>
